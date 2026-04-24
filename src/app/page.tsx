@@ -1,30 +1,46 @@
-import Container from "@/app/_components/container";
-import { HeroPost } from "@/app/_components/hero-post";
-import { Intro } from "@/app/_components/intro";
-import { MoreStories } from "@/app/_components/more-stories";
-import { getAllPosts } from "@/lib/api";
+import { GraphQLClient, gql } from "graphql-request";
 
-export default function Index() {
-  const allPosts = getAllPosts();
+type Post = {
+  title: string;
+  slug: string;
+  brief: string;
+};
 
-  const heroPost = allPosts[0];
+export default async function Home() {
+  const client = new GraphQLClient("https://gql.hashnode.com");
 
-  const morePosts = allPosts.slice(1);
+  const query = gql`
+    query {
+      publication(host: "navaneetha.in") {
+        posts(first: 10) {
+          edges {
+            node {
+              title
+              slug
+              brief
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const data = await client.request(query);
+
+  const posts: Post[] = data.publication.posts.edges.map(
+    (edge: any) => edge.node
+  );
 
   return (
-    <main>
-      <Container>
-        <Intro />
-        <HeroPost
-          title={heroPost.title}
-          coverImage={heroPost.coverImage}
-          date={heroPost.date}
-          author={heroPost.author}
-          slug={heroPost.slug}
-          excerpt={heroPost.excerpt}
-        />
-        {morePosts.length > 0 && <MoreStories posts={morePosts} />}
-      </Container>
+    <main style={{ maxWidth: "700px", margin: "auto", padding: "20px" }}>
+      <h1>Navaneetha Blog</h1>
+
+      {posts.map((post) => (
+        <div key={post.slug}>
+          <h2>{post.title}</h2>
+          <p>{post.brief}</p>
+        </div>
+      ))}
     </main>
   );
 }
